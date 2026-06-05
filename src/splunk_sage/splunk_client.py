@@ -443,3 +443,78 @@ class SplunkClient:
             },
             indent=2,
         )
+
+    async def get_license_info(self) -> dict:
+        """Return license pool usage — quota, used bytes, and % consumed."""
+        try:
+            data = await self._get("/services/licenser/pools", {"count": "0"})
+            pools = []
+            for e in data.get("entry", []):
+                c = e["content"]
+                quota = int(c.get("effective_quota", 0))
+                used = int(c.get("used_bytes", 0))
+                pools.append({
+                    "pool": e["name"],
+                    "quota_gb": round(quota / 1e9, 2),
+                    "used_gb": round(used / 1e9, 2),
+                    "used_pct": round(used / quota * 100, 1) if quota else 0,
+                })
+            return {"pools": pools}
+        except SplunkError:
+            return {"pools": [], "note": "License info not available (may require admin capability)"}
+
+    async def get_kv_store_status(self) -> dict:
+        """Return KV Store health status."""
+        try:
+            data = await self._get("/services/kvstore/status")
+            c = data["entry"][0]["content"]
+            return {
+                "status": c.get("current", {}).get("status", "unknown"),
+                "replication_status": c.get("current", {}).get("replicationStatus", "unknown"),
+                "storage_engine": c.get("current", {}).get("storageEngine", "unknown"),
+            }
+        except SplunkError:
+            return {"status": "unavailable", "note": "KV Store endpoint not accessible"}
+
+    async def get_active_searches(self) -> dict:
+        """Return count and details of currently running search jobs."""
+        try:
+            data = await self._get("/services/search/jobs", {"count": "50", "search": "isDone=0"})
+            jobs = [
+                {
+                    "sid": e["name"],
+                    "label": e["content"].get("label", ""),
+                    "dispatch_state": e["content"].get("dispatchState", ""),
+                    "run_duration": round(float(e["content"].get("runDuration", 0)), 1),
+                    "scan_count": e["content"].get("scanCount", 0),
+                }
+                for e in data.get("entry", [])
+            ]
+            return {"active_job_count": len(jobs), "jobs": jobs}
+        except SplunkError:
+            return {"active_job_count": 0, "jobs": []}
+
+    async def validate_spl(self, spl: str) -> dict:
+        """Run a SPL query with exec_mode=oneshot, count=1 to validate syntax.
+
+        Returns dict with keys: valid (bool), error (str|None), fields (list).
+        """
+        query = spl.strip()
+        if not query.startswith(("search ", "|")):
+            query = f"search {query}"
+        try:
+            resp = await self._post(
+                "/services/search/jobs",
+                {
+                    "search": query,
+                    "earliest_time": "-15m",
+                    "latest_time": "now",
+                    "exec_mode": "oneshot",
+                    "count": "1",
+                    "output_mode": "json",
+                },
+            )
+            fields = [f["name"] for f in resp.get("fields", [])]
+            return {"valid": True, "error": None, "fields": fields, "result_count": len(resp.get("results", []))}
+        except SplunkError as exc:
+            return {"valid": False, "error": str(exc), "fields": [], "result_count": 0}

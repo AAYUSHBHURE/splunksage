@@ -38,21 +38,30 @@ Claude → "web-07 generated 94% of errors (3,412 events).
 
 | Tool | Description |
 |---|---|
-| `ping_splunk` | Verify connectivity and get server version info |
+| **Agentic** | |
+| `investigate_incident` | Autonomously investigate an incident — finds error spikes, root cause, impacted hosts, and correlated system events across all indexes |
+| `spl_validate_and_explain` | Validate a SPL query against Splunk, explain every pipe stage in plain English, and get performance optimization tips |
+| `deployment_health_check` | Full health report: license usage, indexing rate, error rate, search load, KV Store, and index health — with an overall score |
+| **Search** | |
 | `search_logs` | Run any SPL query with time range and result limit |
 | `search_multi_index` | Run SPL across multiple indexes simultaneously |
+| `export_to_csv` | Run a query and write results to a local CSV file |
+| **Indexes** | |
 | `list_indexes` | Discover indexes with event counts and disk sizes |
 | `get_index_info` | Deep-dive metadata for a single index |
 | `get_field_summary` | See all fields in an index before writing a query |
+| **Alerts & Saved Searches** | |
 | `list_saved_searches` | Browse saved searches and reports |
 | `run_saved_search` | Dispatch a saved search and return live results |
 | `list_alerts` | View all scheduled alerts with status and schedule |
 | `create_alert` | Create a new scheduled SPL alert |
 | `delete_alert` | Remove an alert by name |
-| `export_to_csv` | Run a query and write results to a local CSV file |
-| `get_dashboard_data` | List dashboards or run all panels for one dashboard |
+| **Diagnostics** | |
 | `top_errors` | Show top ERROR-level log entries grouped by component |
 | `anomaly_detection` | Surface unusual patterns using Splunk's built-in ML |
+| `get_dashboard_data` | List dashboards or run all panels for one dashboard |
+| **Connectivity** | |
+| `ping_splunk` | Verify connectivity and get server version info |
 
 ---
 
